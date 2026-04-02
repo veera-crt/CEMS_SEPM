@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth-check.js"></script>
+    <script>AuthGuard.requireAuth(['organizer']);</script>
+    <title>Organizer Dashboard - College Event Management System</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#f8fafc',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-[#1e293b]">
+    <div class="grid min-h-screen grid-cols-[280px_1fr]">
+        <!-- Sidebar -->
+        <aside class="flex flex-col border-r border-[#e2e8f0] bg-white p-8">
+            <div class="mb-12 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic shadow-lg shadow-blue-200">A</div>
+                <span class="text-xl font-black tracking-tighter text-primary">ORGANIZER HUB</span>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <button onclick="showSection('create')" data-section="create" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="plus-circle" class="h-5 w-5"></i> Create Event
+                </button>
+                <button onclick="showSection('events')" data-section="events" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="calendar" class="h-5 w-5"></i> Your Events
+                </button>
+                <button onclick="showSection('applications')" data-section="applications" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="file-text" class="h-5 w-5"></i> Applications
+                </button>
+                <button onclick="showSection('attendance')" data-section="attendance" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="user-check" class="h-5 w-5"></i> Attendance
+                </button>
+                <button onclick="showSection('updates')" data-section="updates" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="message-square" class="h-5 w-5"></i> Admin Updates
+                </button>
+                <button onclick="showSection('certificates')" data-section="certificates" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="award" class="h-5 w-5"></i> Certificates
+                </button>
+            </nav>
+
+            <div class="mt-auto pt-8 border-t border-gray-100">
+                <button onclick="logout()" class="flex w-full items-center gap-4 px-5 py-3 text-sm font-bold text-red-500 hover:text-red-600 transition-colors">
+                    <i data-lucide="log-out" class="h-5 w-5"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="p-12 overflow-y-auto">
+            <header class="mb-12 flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-black text-primary tracking-tight">Organizer Portal</h1>
+                    <p class="text-gray-500 font-bold uppercase tracking-widest text-xs mt-1">Manage your campus activities</p>
+                </div>
+                <div class="flex items-center gap-6">
+                    <!-- Feedback Notification Bell -->
+                    <button onclick="showSection('updates')" class="relative h-12 w-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-500 hover:text-primary hover:bg-blue-50 transition-all shadow-sm group">
+                        <i data-lucide="bell" class="h-6 w-6 group-hover:rotate-12 transition-transform"></i>
+                        <span id="notifBadge" class="hidden absolute -top-1 -right-1 h-5 min-w-[20px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full border-2 border-white flex items-center justify-center shadow-lg">0</span>
+                    </button>
+
+                    <a href="organizer-profile.html" class="h-14 w-14 rounded-2xl bg-indigo-50 border-2 border-white flex items-center justify-center text-primary font-black shadow-xl">
+                        <i data-lucide="user" class="h-7 w-7 text-primary"></i>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Sections -->
+            <div id="create" class="section animate-in">
+                <div class="mx-auto max-w-[1000px] rounded-[2.5rem] bg-white p-12 shadow-xl shadow-blue-900/5">
+                    <h2 class="text-3xl font-black text-primary mb-10" id="formHeader">Create New Event</h2>
+                    <form onsubmit="handleSubmit(event)" class="space-y-10">
+                        <!-- Basic Info & Venue -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Event Title</label>
+                                <input type="text" id="eventTitle" required placeholder="AI Symposium 2026" class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Venue / Hall Selection</label>
+                                <select id="hallSelect" required class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all appearance-none cursor-pointer">
+                                    <option value="">Loading Halls...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Timing Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Start Date & Time</label>
+                                <input type="datetime-local" id="startDate" required class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">End Date & Time</label>
+                                <input type="datetime-local" id="endDate" required class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Registration Deadline</label>
+                                <input type="datetime-local" id="regDeadline" required class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Logistics & Monetization -->
+                        <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-10">
+                            <!-- Left: Basic Config -->
+                            <div class="space-y-8 bg-slate-50/50 p-8 rounded-3xl border border-slate-100">
+                                <div class="grid grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Reg. Type</label>
+                                        <select id="regTypeSelect" onchange="togglePaid(this.value)" class="w-full border-b border-blue-100 py-3 font-bold text-primary bg-transparent outline-none">
+                                            <option value="free">Free</option>
+                                            <option value="paid">Paid</option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Team Size</label>
+                                        <input type="number" id="teamSize" value="1" min="1" required class="w-full border-b border-blue-100 py-3 font-bold text-primary bg-transparent outline-none">
+                                    </div>
+                                </div>
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox" id="femaleReq" class="w-5 h-5 rounded-lg border-blue-200">
+                                    <span class="text-xs font-bold text-primary group-hover:text-secondary">1 Female Participant Mandatory</span>
+                                </label>
+                            </div>
+
+                            <!-- Right: Dynamic Monetization & Poster -->
+                            <div class="space-y-8">
+                                <div id="paidAmountSection" class="hidden animate-in p-8 bg-amber-50/50 rounded-3xl border border-amber-100/30">
+                                    <div class="flex items-center gap-6">
+                                        <div class="space-y-2 flex-1">
+                                            <label class="text-xs font-black text-amber-600 uppercase tracking-widest">Registration Fee (₹ per Team)</label>
+                                            <div class="relative">
+                                                <span class="absolute left-0 top-3 font-black text-amber-600">₹</span>
+                                                <input type="number" id="regAmount" placeholder="500" class="w-full border-b border-amber-200 pl-4 py-3 font-black text-amber-900 bg-transparent outline-none">
+                                            </div>
+                                        </div>
+                                        <p class="text-[9px] font-medium text-amber-700 italic max-w-[150px]">Fee collected from each team upon registration.</p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Online Poster URL (Google Drive/Imgur)</label>
+                                    <input type="url" id="posterUrl" required placeholder="https://drive.google.com/..." class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Event Flow Section (Dynamic) -->
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Add Your Event Flow</h3>
+                                    <p class="text-[10px] text-slate-400 font-medium">Define the step-by-step structure of your event.</p>
+                                </div>
+                                <button type="button" onclick="addFlowStep()" class="px-4 py-2 bg-blue-50 text-primary rounded-xl font-black text-[10px] uppercase hover:bg-primary hover:text-white transition-all shadow-sm">
+                                    <i data-lucide="plus" class="w-3 h-3 inline-block -mt-0.5 mr-1"></i> Add Step
+                                </button>
+                            </div>
+                            <div id="flowStepsContainer" class="space-y-3">
+                                <div class="empty-state px-6 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl flex items-center justify-center italic text-slate-400 text-xs">
+                                     No steps added yet. Define rounds or stages here.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Refreshments & Facilities Section -->
+                        <div class="space-y-6 border-t border-slate-50 pt-10">
+                            <div>
+                                <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Refreshments & Facilities</h3>
+                                <p class="text-[10px] text-slate-400 font-medium">Select the amenities you will provide to participants.</p>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="refreshmentsGrid">
+                                <label class="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-blue-50 transition-colors group">
+                                    <input type="checkbox" name="refreshment" value="Welcome Snacks" class="w-4 h-4 rounded border-slate-300">
+                                    <span class="text-[11px] font-bold text-slate-600 group-hover:text-primary">Welcome Snacks</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-blue-50 transition-colors group">
+                                    <input type="checkbox" name="refreshment" value="Tea / Coffee" class="w-4 h-4 rounded border-slate-300">
+                                    <span class="text-[11px] font-bold text-slate-600 group-hover:text-primary">Tea / Coffee</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-blue-50 transition-colors group">
+                                    <input type="checkbox" name="refreshment" value="Lunch" class="w-4 h-4 rounded border-slate-300">
+                                    <span class="text-[11px] font-bold text-slate-600 group-hover:text-primary">Lunch</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-blue-50 transition-colors group">
+                                    <input type="checkbox" name="refreshment" value="Drinking Water" class="w-4 h-4 rounded border-slate-300">
+                                    <span class="text-[11px] font-bold text-slate-600 group-hover:text-primary">Drinking Water</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-blue-50 transition-colors group">
+                                    <input type="checkbox" name="refreshment" value="Light Snacks" class="w-4 h-4 rounded border-slate-300">
+                                    <span class="text-[11px] font-bold text-slate-600 group-hover:text-primary">Light Snacks</span>
+                                </label>
+                            </div>
+                            
+                            <div class="flex gap-4 items-end">
+                                <div class="flex-1 space-y-2">
+                                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Custom Items</label>
+                                    <input type="text" id="customRefreshment" placeholder="e.g. Energy Drinks, Breakfast" class="w-full border-b border-gray-100 py-3 font-bold text-primary outline-none focus:border-primary text-sm bg-transparent">
+                                </div>
+                                <button type="button" onclick="addCustomRefreshment()" class="px-6 py-3 bg-indigo-50 text-indigo-600 rounded-xl font-black text-xs hover:bg-indigo-600 hover:text-white transition-all shadow-sm">➕ ADD ITEM</button>
+                            </div>
+
+                            <div class="space-y-2 pt-2">
+                                <label class="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Additional Details / Timings</label>
+                                <textarea id="logisticsNotes" rows="1" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" 
+                                    class="w-full border-b border-indigo-100 py-3 font-medium text-slate-600 focus:border-indigo-400 outline-none transition-all resize-none overflow-hidden min-h-[40px] text-xs" 
+                                    placeholder="Special arrangements or time-specific slots..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="space-y-3">
+                            <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Event Teaser & Description</label>
+                            <textarea id="eventDesc" rows="1" required 
+                                oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                                class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all resize-none overflow-hidden min-h-[60px]" 
+                                placeholder="Explain the theme and goals of your event..."></textarea>
+                        </div>
+
+                        <button type="button" onclick="showReview()" class="w-full py-6 bg-primary text-white rounded-2xl font-black text-lg hover:bg-secondary transition-all shadow-xl shadow-blue-900/20 flex items-center justify-center gap-3">
+                            <span>Review Proposal Details</span>
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Review Modal -->
+            <div id="reviewModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+                <div class="bg-white rounded-[3rem] max-w-[800px] w-full max-h-[90vh] overflow-y-auto p-12 shadow-2xl animate-in">
+                    <div class="flex justify-between items-start mb-10">
+                        <div>
+                             <h2 class="text-3xl font-black text-primary tracking-tighter">Final Proposal Review</h2>
+                             <p class="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">Verify your event logistics before audit</p>
+                        </div>
+                        <button onclick="closeReview()" class="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-red-50 hover:text-red-500 transition-colors">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-10">
+                         <!-- Poster Preview -->
+                         <div class="space-y-4">
+                            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Poster Preview</label>
+                            <div class="aspect-[3/4] rounded-3xl overflow-hidden border border-slate-100 shadow-inner bg-slate-50">
+                                <img id="reviewPoster" src="" class="w-full h-full object-cover">
+                            </div>
+                         </div>
+
+                         <!-- Details Summary -->
+                         <div class="space-y-8">
+                             <div class="grid grid-cols-2 gap-6">
+                                 <div class="p-5 bg-blue-50/50 rounded-2xl">
+                                     <p class="text-[9px] font-black text-blue-400 uppercase mb-1">Title</p>
+                                     <p id="reviewTitle" class="font-black text-primary text-sm line-clamp-1"></p>
+                                 </div>
+                                 <div class="p-5 bg-blue-50/50 rounded-2xl">
+                                     <p class="text-[9px] font-black text-blue-400 uppercase mb-1">Hall</p>
+                                     <p id="reviewHall" class="font-black text-primary text-sm"></p>
+                                 </div>
+                             </div>
+
+                             <div class="grid grid-cols-3 gap-4">
+                                 <div class="p-4 bg-slate-50 rounded-2xl">
+                                     <p class="text-[8px] font-black text-gray-400 uppercase mb-1">Start</p>
+                                     <p id="reviewStart" class="font-bold text-primary text-[10px]"></p>
+                                 </div>
+                                 <div class="p-4 bg-slate-50 rounded-2xl">
+                                     <p class="text-[8px] font-black text-gray-400 uppercase mb-1">End</p>
+                                     <p id="reviewEnd" class="font-bold text-primary text-[10px]"></p>
+                                 </div>
+                                 <div class="p-4 bg-slate-50 rounded-2xl">
+                                     <p class="text-[8px] font-black text-gray-400 uppercase mb-1">Deadline</p>
+                                     <p id="reviewDeadline" class="font-bold text-primary text-[10px]"></p>
+                                 </div>
+                             </div>
+
+                             <div class="grid grid-cols-2 gap-6 p-6 bg-indigo-900 rounded-[2rem] text-white">
+                                 <div class="flex items-center gap-3">
+                                     <div class="p-2 bg-white/10 rounded-xl"><i data-lucide="users" class="w-4 h-4 text-indigo-300"></i></div>
+                                     <div>
+                                         <p class="text-[8px] font-black text-indigo-300 uppercase">Team Size</p>
+                                         <p id="reviewTeam" class="font-black text-sm"></p>
+                                     </div>
+                                 </div>
+                                 <div class="flex items-center gap-3">
+                                     <div class="p-2 bg-white/10 rounded-xl"><i data-lucide="indian-rupee" class="w-4 h-4 text-indigo-300"></i></div>
+                                     <div>
+                                         <p class="text-[8px] font-black text-indigo-300 uppercase">Fees</p>
+                                         <p id="reviewFees" class="font-black text-sm"></p>
+                                     </div>
+                                 </div>
+                             </div>
+
+                             <!-- Flow and Refreshments Review -->
+                             <div class="space-y-6">
+                                 <div>
+                                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Event Structure Flow</p>
+                                     <div id="reviewFlow" class="space-y-2">
+                                         <!-- Steps list -->
+                                     </div>
+                                 </div>
+                                 <div>
+                                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Refreshments & Facilities</p>
+                                     <div id="reviewLogistics" class="flex flex-wrap gap-2">
+                                         <!-- Badges -->
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                    </div>
+
+                    <div class="mt-12 flex gap-4">
+                        <button onclick="closeReview()" class="flex-1 py-5 bg-slate-50 text-slate-500 font-bold rounded-2xl hover:bg-slate-100 transition-all">Go Back & Edit</button>
+                        <button id="finalSubmitBtn" onclick="confirmSubmit()" class="flex-[2] py-5 bg-primary text-white font-black rounded-2xl shadow-xl shadow-blue-900/20 hover:bg-secondary transition-all flex items-center justify-center gap-3">
+                            <span>Confirm & Request Hall</span>
+                            <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="events" class="section hidden animate-in">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="createdEventsGrid">
+                    <div class="col-span-full py-20 text-center text-gray-400 font-bold italic bg-white rounded-3xl border border-dashed border-gray-200">
+                        <i data-lucide="plus-circle" class="h-10 w-10 mx-auto mb-4 opacity-20"></i>
+                        You haven't created any events yet.
+                    </div>
+                </div>
+            </div>
+
+            <div id="applications" class="section hidden animate-in">
+                <div class="rounded-[2.5rem] bg-white p-12 shadow-xl shadow-blue-900/5 text-center">
+                    <i data-lucide="file-text" class="w-16 h-16 text-gray-100 mx-auto mb-6"></i>
+                    <h2 class="text-2xl font-black text-primary">No applications yet.</h2>
+                    <p class="text-gray-400 font-bold mt-2">Publish an event to start receiving registrations.</p>
+                </div>
+            </div>
+            
+            <div id="updates" class="section hidden animate-in">
+                <div class="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8">
+                    <!-- Messaging Interface -->
+                    <div class="bg-white rounded-3xl p-10 border border-gray-100 shadow-sm">
+                        <div class="flex items-center gap-3 mb-8">
+                             <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                <i data-lucide="send" class="h-5 w-5"></i>
+                             </div>
+                             <h3 class="text-xl font-black text-primary">Message Administrator</h3>
+                        </div>
+                        <form onsubmit="event.preventDefault(); alert('Message sent to Admin!'); this.reset();" class="space-y-6">
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Regarding Event</label>
+                                <select class="w-full border-b border-gray-100 py-3 font-bold text-primary outline-none focus:border-primary transition-all" id="eventSelect">
+                                    <option>General Support</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Message Body</label>
+                                <textarea rows="3" class="w-full border-b border-gray-100 py-3 font-bold text-primary outline-none focus:border-primary transition-all resize-none" placeholder="Explain your request..."></textarea>
+                            </div>
+                            <button type="submit" class="w-full py-4 bg-primary text-white rounded-2xl font-bold hover:bg-secondary transition-all shadow-lg shadow-blue-900/10">Send Message</button>
+                        </form>
+                    </div>
+
+                    <!-- Communication History -->
+                    <div class="space-y-6">
+                        <div class="bg-indigo-900 rounded-3xl p-8 text-white">
+                            <h4 class="font-black text-sm uppercase tracking-widest opacity-60 mb-6 flex items-center gap-2">
+                                <i data-lucide="bell" class="h-4 w-4"></i> Admin Feedback
+                            </h4>
+                            <div class="space-y-4" id="feedbackList">
+                                <p class="text-sm font-medium text-indigo-300 italic">No feedback messages yet.</p>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+
+            <div id="attendance" class="section hidden animate-in text-center">
+                 <div class="rounded-[2.5rem] bg-indigo-900 p-16 text-white shadow-2xl">
+                    <i data-lucide="qr-code" class="w-24 h-24 mx-auto mb-8 text-indigo-400"></i>
+                    <h2 class="text-4xl font-black mb-4">Attendance Control</h2>
+                    <p class="text-indigo-200 mb-10 text-lg">Generate dynamic QR codes for secure check-ins.</p>
+                    <button class="px-12 py-5 bg-white text-indigo-900 rounded-2xl font-black text-lg hover:bg-indigo-50 transition-all">Generate QR Now</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        // 🖼️ GOOGLE DRIVE IMAGE UTILITY
+        function getDriveDirectLink(url) {
+            if (!url) return 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=400';
+            let finalUrl = url;
+            if (url.includes('drive.google.com')) {
+                const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    finalUrl = `https://lh3.googleusercontent.com/d/${match[1]}`;
+                }
+            }
+            console.log("Resolved Content URL:", finalUrl);
+            return finalUrl;
+        }
+
+        const token = localStorage.getItem('token');
+        let editingEventId = null;
+        let activeEvents = [];
+
+        // 🏢 FETCH HALLS FOR DROPDOWN
+        async function loadHalls() {
+            const select = document.getElementById('hallSelect');
+            try {
+                const res = await AuthGuard.secureFetch('/api/events/halls', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const halls = await res.json();
+                if(res.ok) {
+                    select.innerHTML = halls.map(h => `<option value="${h.id}">${h.name} (Cap: ${h.capacity})</option>`).join('');
+                }
+            } catch(e) { console.error("Halls load failed", e); }
+        }
+        loadHalls();
+
+        function showSection(sectionId) {
+            localStorage.setItem('activeOrganizerSection', sectionId);
+            
+            // If clicking 'create' from sidebar, reset form from any editing states
+            if(sectionId === 'create' && !editingEventId) resetForm();
+
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            const targetSection = document.getElementById(sectionId);
+            if(targetSection) targetSection.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-50', 'text-primary', 'border-primary');
+                if(btn.dataset.section === sectionId) btn.classList.add('bg-blue-50', 'text-primary', 'border-primary');
+            });
+
+            if(sectionId === 'events') loadMyEvents();
+            if(sectionId === 'updates') loadAdminUpdates();
+        }
+
+        async function loadMyEvents() {
+            const grid = document.getElementById('createdEventsGrid');
+            try {
+                const res = await AuthGuard.secureFetch('/api/events/my-events', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const events = await res.json();
+                activeEvents = events;
+                if(res.ok && events.length > 0) {
+                    grid.innerHTML = events.map(e => `
+                        <div class="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            <!-- Vertical Poster -->
+                            <div class="relative aspect-[3/4] overflow-hidden">
+                                <img src="${getDriveDirectLink(e.poster_url)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <div class="absolute top-4 right-4 capitalize">
+                                    <span class="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${e.status === 'approved' ? 'bg-green-500 text-white' : e.status === 'rejected' ? 'bg-red-500 text-white' : 'bg-amber-400 text-white'} shadow-lg">
+                                        ${e.status}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Event Details -->
+                            <div class="p-8 space-y-4">
+                                <div>
+                                    <h3 class="text-xl font-black text-primary leading-tight mb-1">${e.title}</h3>
+                                    <p class="text-gray-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                        <i data-lucide="map-pin" class="w-3 h-3 text-secondary"></i> ${e.hall_name}
+                                    </p>
+                                </div>
+                                
+                                <div class="pt-4 border-t border-gray-50 flex justify-between items-center text-xs font-bold text-gray-500">
+                                    <div class="flex items-center gap-2">
+                                        <div class="p-1.5 bg-blue-50 text-primary rounded-lg">
+                                            <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                                        </div>
+                                        <span class="font-black text-primary uppercase text-[10px] tracking-tighter">Team: ${e.team_size}</span>
+                                    </div>
+                                    <span class="text-gray-400">${new Date(e.start_date).toLocaleDateString([], {day:'2-digit', month:'short'})}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    lucide.createIcons();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        // 🥗 Refreshment Field Management
+        function addCustomRefreshment() {
+            const input = document.getElementById('customRefreshment');
+            const val = input.value.trim();
+            if(!val) return;
+            
+            const grid = document.getElementById('refreshmentsGrid');
+            const id = 'custom-' + Date.now();
+            
+            const label = document.createElement('label');
+            label.className = "flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 cursor-pointer hover:bg-indigo-100 transition-colors group animate-in";
+            label.innerHTML = `
+                <input type="checkbox" name="refreshment" value="${val}" checked class="w-4 h-4 rounded border-indigo-300">
+                <span class="text-[11px] font-bold text-indigo-700 group-hover:text-indigo-900">${val}</span>
+            `;
+            grid.appendChild(label);
+            input.value = '';
+        }
+
+        // 📝 Flow Step Management
+        let flowSteps = [];
+        function addFlowStep(content = '') {
+            const container = document.getElementById('flowStepsContainer');
+            const empty = container.querySelector('.empty-state');
+            if(empty) empty.remove();
+            
+            const stepId = Date.now() + Math.random().toString(36).substr(2, 9);
+            const div = document.createElement('div');
+            div.id = `step-${stepId}`;
+            div.className = "group flex gap-4 items-start p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all animate-in draggable";
+            div.innerHTML = `
+                <div class="mt-2 text-slate-300 group-hover:text-primary cursor-grab"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>
+                <div class="flex-1">
+                    <input type="text" placeholder="e.g. Round 1: Idea Submission..." value="${content}" 
+                        class="w-full font-bold text-slate-700 placeholder:text-slate-300 outline-none bg-transparent text-sm">
+                </div>
+                <button type="button" onclick="removeStep('${stepId}')" class="text-slate-300 hover:text-red-500 transition-colors">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+        }
+
+        function removeStep(id) {
+            document.getElementById(`step-${id}`).remove();
+            const container = document.getElementById('flowStepsContainer');
+            if(container.children.length === 0) {
+                container.innerHTML = `<div class="empty-state px-6 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl flex items-center justify-center italic text-slate-400 text-xs">No steps added yet. Define rounds or stages here.</div>`;
+            }
+        }
+
+        async function loadAdminUpdates() {
+            const list = document.getElementById('feedbackList');
+            try {
+                const res = await AuthGuard.secureFetch('/api/events/my-events', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const events = await res.json();
+                if(res.ok) {
+                    const withMsgs = events.filter(e => e.admin_message);
+                    
+                    // Update Notification Count (only count if they haven't been resubmitted as pending)
+                    // Or count all where status=rejected and admin_message exists
+                    const rejectionCount = events.filter(e => e.status === 'rejected' && e.admin_message).length;
+                    updateNotificationBadge(rejectionCount);
+
+                    if(withMsgs.length > 0) {
+                        list.innerHTML = withMsgs.map(e => `
+                            <div class="p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 animate-in group">
+                                <div class="flex justify-between items-start mb-3">
+                                    <p class="text-[10px] font-black uppercase tracking-widest text-indigo-300">${e.title}</p>
+                                    <span class="text-[8px] font-black px-2 py-0.5 bg-red-600/20 text-red-200 rounded-full border border-red-500/20">${e.status.toUpperCase()}</span>
+                                </div>
+                                <p class="text-sm font-medium mb-4 italic text-indigo-50 border-l-2 border-indigo-400/30 pl-4">"${e.admin_message}"</p>
+                                
+                                ${e.alternative_halls && e.alternative_halls.length > 0 ? `
+                                <div class="mb-5 space-y-2">
+                                     <p class="text-[9px] font-black text-indigo-300 uppercase tracking-widest px-1">Suggested Alternatives on this date:</p>
+                                     <div class="flex flex-wrap gap-1.5">
+                                         ${e.alternative_halls.map(h => `<span class="bg-indigo-900/60 text-white text-[9px] font-bold px-2.5 py-1 rounded-lg border border-white/10 hover:bg-emerald-600 transition-colors cursor-default">${h}</span>`).join('')}
+                                     </div>
+                                </div>
+                                ` : ''}
+
+                                <div class="flex justify-end pt-2">
+                                    ${e.status === 'rejected' ? `
+                                    <button onclick="editEvent(${e.id})" class="text-[10px] font-black text-white bg-indigo-500 px-4 py-2 rounded-xl uppercase tracking-widest hover:bg-white hover:text-indigo-900 transition-all shadow-lg flex items-center gap-2 group/btn">
+                                        <span>Edit & Re-submit</span>
+                                        <i data-lucide="edit-3" class="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform"></i>
+                                    </button>` : ''}
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        list.innerHTML = '<p class="text-sm font-medium text-indigo-300 italic text-center">No feedback messages yet.</p>';
+                    }
+                    lucide.createIcons();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function fetchNotificationCount() {
+            try {
+                const res = await AuthGuard.secureFetch('/api/events/my-events', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const events = await res.json();
+                if(res.ok) {
+                    const rejectionCount = events.filter(e => e.status === 'rejected' && e.admin_message).length;
+                    updateNotificationBadge(rejectionCount);
+                }
+            } catch(e) { console.warn("Notif fetch failed", e); }
+        }
+
+        function updateNotificationBadge(count) {
+            const badge = document.getElementById('notifBadge');
+            if(count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function togglePaid(val) {
+            document.getElementById('paidAmountSection').classList.toggle('hidden', val === 'free');
+        }
+
+        function showReview() {
+            const form = document.querySelector('form');
+            if(!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Fill Modal
+            document.getElementById('reviewTitle').textContent = form.querySelector('input[placeholder*="AI Symposium"]').value;
+            document.getElementById('reviewHall').textContent = document.getElementById('hallSelect').options[document.getElementById('hallSelect').selectedIndex].text.split('(')[0];
+            document.getElementById('reviewStart').textContent = new Date(form.querySelectorAll('input[type="datetime-local"]')[0].value).toLocaleString([], {dateStyle:'short', timeStyle:'short'});
+            document.getElementById('reviewEnd').textContent = new Date(form.querySelectorAll('input[type="datetime-local"]')[1].value).toLocaleString([], {dateStyle:'short', timeStyle:'short'});
+            document.getElementById('reviewDeadline').textContent = new Date(form.querySelectorAll('input[type="datetime-local"]')[2].value).toLocaleString([], {dateStyle:'short', timeStyle:'short'});
+            document.getElementById('reviewTeam').textContent = document.getElementById('teamSize').value + " Members";
+            
+            const regType = document.getElementById('regTypeSelect').value;
+            const amount = document.getElementById('regAmount').value || 0;
+            document.getElementById('reviewFees').textContent = regType === 'free' ? 'FREE' : `₹${amount}`;
+            
+            // Poster
+            const posterUrl = form.querySelector('input[type="url"]').value;
+            document.getElementById('reviewPoster').src = getDriveDirectLink(posterUrl);
+
+            // Flow
+            const flowContainer = document.getElementById('flowStepsContainer');
+            const steps = Array.from(flowContainer.querySelectorAll('input[type="text"]')).map(i => i.value).filter(v => v);
+            document.getElementById('reviewFlow').innerHTML = steps.map((s, idx) => `
+                <div class="flex gap-3 items-center">
+                    <span class="w-5 h-5 rounded-full bg-slate-100 text-[10px] font-black flex items-center justify-center text-slate-500">${idx+1}</span>
+                    <p class="text-[11px] font-bold text-slate-600">${s}</p>
+                </div>
+            `).join('') || '<p class="text-[10px] italic text-slate-300">No structured stages defined.</p>';
+
+            // Refreshments
+            const refreshments = Array.from(document.querySelectorAll('input[name="refreshment"]:checked')).map(i => i.value);
+            document.getElementById('reviewLogistics').innerHTML = refreshments.map(r => `
+                <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[9px] font-black border border-indigo-100">${r}</span>
+            `).join('') || '<p class="text-[10px] italic text-slate-300">No amenities selected.</p>';
+
+            document.getElementById('reviewModal').classList.remove('hidden');
+        }
+
+        function closeReview() {
+            document.getElementById('reviewModal').classList.add('hidden');
+        }
+
+        async function editEvent(id) {
+            console.log("Initiating Resubmission Logic for Event ID:", id);
+            
+            // Try to find in cache first
+            let event = activeEvents.find(e => Number(e.id) === Number(id));
+            
+            // If not in cache (e.g. stale refresh), re-fetch from API
+            if(!event) {
+                console.log("State Miss: Fetching fresh event data from registry...");
+                try {
+                    const res = await AuthGuard.secureFetch('/api/events/my-events', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const events = await res.json();
+                    if(res.ok) {
+                        activeEvents = events;
+                        event = activeEvents.find(e => Number(e.id) === Number(id));
+                    }
+                } catch(e) { console.error("Registry fetch failed", e); }
+            }
+
+            if(!event) {
+                console.error("Critical State Error: Event ID not found in authorized registry.", id);
+                alert("Failed to reconstruct proposal details. Please refresh.");
+                return;
+            }
+
+            console.log("Rehydrating Form with Context:", event);
+            editingEventId = event.id;
+            
+            // Populate Fields with stable IDs
+            document.getElementById('eventTitle').value = event.title;
+            document.getElementById('hallSelect').value = event.hall_id;
+            
+            const fmtDate = (d) => d ? new Date(d).toISOString().slice(0, 16) : "";
+            document.getElementById('startDate').value = fmtDate(event.start_date);
+            document.getElementById('endDate').value = fmtDate(event.end_date);
+            document.getElementById('regDeadline').value = fmtDate(event.reg_deadline);
+            
+            document.getElementById('regTypeSelect').value = event.reg_amount > 0 ? 'paid' : 'free';
+            togglePaid(event.reg_amount > 0 ? 'paid' : 'free');
+            document.getElementById('regAmount').value = event.reg_amount;
+            document.getElementById('teamSize').value = event.team_size;
+            document.getElementById('femaleReq').checked = event.female_mandatory;
+            document.getElementById('posterUrl').value = event.poster_url;
+            document.getElementById('eventDesc').value = event.description;
+
+            // Rehydrate Flow
+            const flowContainer = document.getElementById('flowStepsContainer');
+            flowContainer.innerHTML = '';
+            if(event.event_flow && Array.isArray(event.event_flow)) {
+                event.event_flow.forEach(s => addFlowStep(s));
+            } else {
+                flowContainer.innerHTML = '<div class="empty-state px-6 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl flex items-center justify-center italic text-slate-400 text-xs">No steps added yet. Define rounds or stages here.</div>';
+            }
+
+            // Rehydrate Refreshments
+            document.querySelectorAll('input[name="refreshment"]').forEach(i => i.checked = false);
+            if(event.refreshments) {
+                const logs = event.refreshments;
+                if(logs.items) {
+                    logs.items.forEach(item => {
+                        const existing = Array.from(document.querySelectorAll('input[name="refreshment"]')).find(i => i.value === item);
+                        if(existing) existing.checked = true;
+                        else {
+                            // Add as custom
+                            const grid = document.getElementById('refreshmentsGrid');
+                            const label = document.createElement('label');
+                            label.className = "flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 cursor-pointer hover:bg-indigo-100 transition-colors group";
+                            label.innerHTML = `<input type="checkbox" name="refreshment" value="${item}" checked class="w-4 h-4 rounded border-indigo-300"><span class="text-[11px] font-bold text-indigo-700 group-hover:text-indigo-900">${item}</span>`;
+                            grid.appendChild(label);
+                        }
+                    });
+                }
+                document.getElementById('logisticsNotes').value = logs.notes || '';
+            }
+
+            // UI Update
+            document.getElementById('formHeader').textContent = "Update & Resubmit Event";
+            document.getElementById('finalSubmitBtn').querySelector('span').textContent = "Update & Resubmit Proposal";
+            
+            showSection('create');
+        }
+
+        function resetForm() {
+            const form = document.querySelector('form');
+            form.reset();
+            editingEventId = null;
+            document.getElementById('formHeader').textContent = "Create New Event";
+            document.getElementById('finalSubmitBtn').innerHTML = '<span>Confirm & Request Hall</span> <i data-lucide="check-circle" class="w-5 h-5"></i>';
+            lucide.createIcons();
+            togglePaid('free');
+        }
+
+        async function confirmSubmit() {
+            const btn = document.getElementById('finalSubmitBtn');
+            btn.disabled = true;
+            btn.classList.add('opacity-70');
+            btn.innerHTML = editingEventId ? '<i data-lucide="loader" class="h-5 w-5 animate-spin"></i> Updating Proposal...' : '<i data-lucide="loader" class="h-5 w-5 animate-spin"></i> Publishing...';
+            lucide.createIcons();
+
+            const flowStepsSet = Array.from(document.getElementById('flowStepsContainer').querySelectorAll('input[type="text"]')).map(i => i.value).filter(v => v);
+            const refreshmentsSet = Array.from(document.querySelectorAll('input[name="refreshment"]:checked')).map(i => i.value);
+            const notes = document.getElementById('logisticsNotes').value;
+
+            const payload = {
+                title: document.getElementById('eventTitle').value,
+                hall_id: parseInt(document.getElementById('hallSelect').value),
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value,
+                reg_deadline: document.getElementById('regDeadline').value,
+                reg_amount: parseInt(document.getElementById('regAmount').value || 0),
+                team_size: parseInt(document.getElementById('teamSize').value),
+                female_mandatory: document.getElementById('femaleReq').checked,
+                poster_url: document.getElementById('posterUrl').value,
+                description: document.getElementById('eventDesc').value,
+                event_flow: flowStepsSet,
+                refreshments: { items: refreshmentsSet, notes: notes }
+            };
+
+            try {
+                const url = editingEventId ? `/api/events/update/${editingEventId}` : '/api/events/create';
+                const res = await AuthGuard.secureFetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    alert(editingEventId ? 'Event Updated Successfully!' : 'Proposal Submitted!');
+                    resetForm();
+                    closeReview();
+                    showSection('events');
+                    fetchNotificationCount(); // Re-fetch counts
+                } else {
+                    alert(data.error);
+                }
+            } catch(err) { 
+                console.error("Critical Resubmission Error (Audit Traces):", err);
+                alert("Connectivity Error: Check browser console or server logs. Detail: " + err.message); 
+            }
+            finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70');
+                btn.innerHTML = editingEventId ? "<span>Update & Resubmit Proposal</span> <i data-lucide='check-circle' class='w-5 h-5'></i>" : "<span>Confirm & Request Hall</span> <i data-lucide='check-circle' class='w-5 h-5'></i>";
+                lucide.createIcons();
+            }
+        }
+
+        // 🔄 RESTORE LAST ACTIVE SECTION ON REFRESH
+        const lastSection = localStorage.getItem('activeOrganizerSection') || 'create';
+        showSection(lastSection);
+        fetchNotificationCount();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+2026-04-02 14:58:32,081 - INFO - Connection pool created successfully
+ * Serving Flask app 'app'
+ * Debug mode: on
+Address already in use
+Port 5005 is in use by another program. Either identify and stop that program, or start the server with a different port.

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth-check.js"></script>
+    <script>AuthGuard.requireAuth(['student']);</script>
+    <title>Student Dashboard - College Event Management System</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#f8fafc',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Inter', sans-serif; }
+        .glass-sheen {
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-sheen::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
+            transform: rotate(15deg) translate(-100%, -100%);
+            transition: transform 3s cubic-bezier(0.19, 1, 0.22, 1);
+            pointer-events: none;
+            z-index: 20;
+        }
+        .glass-sheen:hover::after {
+            transform: rotate(15deg) translate(100%, 100%);
+        }
+        .filter-pill.active {
+            background: #2563eb !important;
+            color: white !important;
+            border-color: #2563eb !important;
+            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-[#1e293b]">
+    <div class="grid min-h-screen grid-cols-[280px_1fr]">
+        <!-- Sidebar -->
+        <aside class="flex flex-col border-r border-[#e2e8f0] bg-white p-8">
+            <div class="mb-12 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic shadow-lg shadow-blue-200">A</div>
+                <span class="text-xl font-black tracking-tighter text-primary">STUDENT HUB</span>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <button onclick="showSection('updates')" data-section="updates" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="bell" class="h-5 w-5"></i> Updates
+                </button>
+                <button onclick="showSection('events')" data-section="events" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="calendar" class="h-5 w-5"></i> Events
+                </button>
+                <button onclick="showSection('culturals')" data-section="culturals" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="music" class="h-5 w-5"></i> Culturals
+                </button>
+                <button onclick="showSection('friends')" data-section="friends" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="users" class="h-5 w-5"></i> Friends
+                </button>
+                <button onclick="showSection('certificates')" data-section="certificates" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="award" class="h-5 w-5"></i> Certificates
+                </button>
+            </nav>
+
+            <div class="mt-auto pt-8 border-t border-gray-100">
+                <button onclick="logout()" class="flex w-full items-center gap-4 px-5 py-3 text-sm font-bold text-red-500 hover:text-red-600 transition-colors">
+                    <i data-lucide="log-out" class="h-5 w-5"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="p-12 overflow-y-auto w-full relative">
+            <!-- Profile Completion Overlay (Hidden by default) -->
+            <div id="profileOverlay" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-[#0f172a]/95 backdrop-blur-md p-6">
+                <div class="bg-white rounded-[2.5rem] p-12 max-w-lg w-full shadow-2xl text-center border border-white">
+                    <div class="mb-8 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-50 text-amber-600 ring-8 ring-amber-50/50">
+                        <i data-lucide="user" class="h-10 w-10"></i>
+                    </div>
+                    <h2 class="text-4xl font-black text-[#1e3a8a] mb-4 tracking-tight">Profile Incomplete!</h2>
+                    <p class="text-[#64748b] text-lg font-medium mb-10 leading-relaxed">
+                        To access your workspace and register for events, you must first complete your profile details.
+                    </p>
+                    <div class="flex flex-col gap-4">
+                        <a href="student-profile.html" class="w-full py-5 bg-[#1e3a8a] text-white rounded-2xl font-black text-lg hover:bg-[#1e40af] transition-all shadow-xl shadow-blue-900/20 flex items-center justify-center gap-3">
+                            Complete Profile Now <i data-lucide="arrow-right" class="h-5 w-5"></i>
+                        </a>
+                        <button onclick="logout()" class="text-sm font-bold text-[#94a3b8] hover:text-[#f87171] transition-colors">Sign out and return later</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header -->
+            <header class="mb-12 flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-black text-primary tracking-tight">Hello, <span id="userName">User</span></h1>
+                    <p class="text-gray-500 font-bold uppercase tracking-widest text-xs mt-1" id="userRole">STUDENT</p>
+                </div>
+                <div class="flex items-center gap-6">
+                    <button class="relative h-12 w-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-500 hover:text-primary transition-colors hover:shadow-lg">
+                        <i data-lucide="bell" class="h-6 w-6"></i>
+                        <span class="absolute top-3 right-3 h-2 w-2 rounded-full bg-red-500 ring-4 ring-white"></span>
+                    </button>
+                    <a href="student-profile.html" class="h-14 w-14 rounded-2xl bg-indigo-50 border-2 border-white flex items-center justify-center text-primary font-black shadow-xl">
+                        <i data-lucide="user" class="h-7 w-7"></i>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Updates Section -->
+            <div id="updates" class="section animate-in">
+                <div class="rounded-3xl bg-white p-12 text-center border border-gray-100">
+                    <i data-lucide="construction" class="h-10 w-10 mx-auto mb-4 text-amber-500"></i>
+                    <h2 class="text-2xl font-bold text-primary mb-2">Feature Under Construction</h2>
+                    <p class="text-gray-400 font-medium">We are updating the notification system. Please check back later.</p>
+                </div>
+            </div>
+
+            <div id="events" class="section hidden animate-in">
+                <!-- Advanced Filter Suite -->
+                <div class="mb-10 flex flex-wrap items-center gap-3">
+                    <button onclick="filterEvents('all')" class="filter-pill active px-6 py-2.5 rounded-full bg-white border border-slate-200 text-xs font-black uppercase tracking-widest shadow-sm transition-all hover:bg-slate-50">All Events</button>
+                    <button onclick="filterEvents('hackathon')" class="filter-pill px-6 py-2.5 rounded-full bg-white border border-slate-200 text-xs font-black uppercase tracking-widest shadow-sm transition-all hover:bg-slate-50">Hackathons</button>
+                    <button onclick="filterEvents('ideathon')" class="filter-pill px-6 py-2.5 rounded-full bg-white border border-slate-200 text-xs font-black uppercase tracking-widest shadow-sm transition-all hover:bg-slate-50">Ideathons</button>
+                    <button onclick="filterEvents('conference')" class="filter-pill px-6 py-2.5 rounded-full bg-white border border-slate-200 text-xs font-black uppercase tracking-widest shadow-sm transition-all hover:bg-slate-50">Conferences</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8" id="eventsGrid">
+                    <!-- Events will be loaded dynamically -->
+                </div>
+                <div id="noEvents" class="py-20 text-center text-gray-400 font-bold italic">
+                    <i data-lucide="calendar" class="h-10 w-10 mx-auto mb-4 opacity-20"></i>
+                    No events registered yet. Browse some in the sidebar!
+                </div>
+            </div>
+
+            <!-- Other sections go here (friends, culturals, etc) -->
+            <div id="friends" class="section hidden animate-in">
+                 <div class="mb-8 flex items-center gap-4">
+                    <div class="h-8 w-2 rounded bg-purple-500"></div>
+                    <h2 class="text-3xl font-extrabold text-primary">Friends and Connections.</h2>
+                </div>
+                <div class="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+                    <div class="relative mb-8">
+                        <input type="text" placeholder="Search by mail......" class="w-full rounded-xl border-2 border-gray-100 p-4 pl-12 outline-none focus:border-primary">
+                        <i data-lucide="search" class="absolute top-4.5 left-4 h-5 w-5 text-gray-400"></i>
+                    </div>
+                    <p class="text-center text-gray-400 py-10 font-bold">Search to find friends in our campus.</p>
+                </div>
+            </div>
+
+            <div id="culturals" class="section hidden animate-in">
+                 <div class="mb-8 flex items-center gap-4">
+                    <div class="h-8 w-2 rounded bg-pink-500"></div>
+                    <h2 class="text-3xl font-extrabold text-primary">Cultural Bookings.</h2>
+                </div>
+                <div class="rounded-3xl bg-white p-12 text-center border border-gray-100 italic font-medium text-gray-400">
+                    <i data-lucide="music" class="h-10 w-10 mx-auto mb-4 text-pink-500 opacity-20"></i>
+                    No active cultural events right now.
+                </div>
+            </div>
+
+            <div id="certificates" class="section hidden animate-in">
+                 <div class="mb-8 flex items-center gap-4">
+                    <div class="h-8 w-2 rounded bg-indigo-500"></div>
+                    <h2 class="text-3xl font-extrabold text-primary">My Certificates.</h2>
+                </div>
+                <div class="rounded-3xl bg-[#f0f4ff] p-12 text-center border border-indigo-100 text-indigo-400 font-bold">
+                    <i data-lucide="award" class="h-10 w-10 mx-auto mb-4 opacity-50"></i>
+                    Your certificates will appear here once you complete events.
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Registration Modal -->
+        <div id="regModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-[#0f172a]/70 backdrop-blur-sm p-4">
+            <div class="w-full max-w-[340px] rounded-[2rem] bg-white p-10 text-center shadow-2xl animate-in">
+                <i data-lucide="hammer" class="h-10 w-10 mx-auto mb-6 text-amber-500 opacity-50"></i>
+                <h2 class="text-xl font-black text-slate-900 mb-2 tracking-tight">Under Construction</h2>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mb-8 italic">Feature coming soon.</p>
+                <button onclick="closeModal()" class="w-full py-4 bg-slate-100 text-slate-500 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all">
+                    Dismiss
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        // Section switching logic with persistence
+        function showSection(sectionId) {
+            // Save state
+            localStorage.setItem('activeStudentSection', sectionId);
+
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            const targetSection = document.getElementById(sectionId);
+            if(targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-50', 'text-primary', 'border-primary');
+                if(btn.dataset.section === sectionId) {
+                    btn.classList.add('bg-blue-50', 'text-primary', 'border-primary');
+                }
+            });
+        }
+
+        // Get current user for UI display
+        const user = AuthGuard.getUser();
+        if (user) {
+            const userName = user.full_name || (user.email ? user.email.split('@')[0] : "User");
+            document.getElementById('userName').textContent = userName;
+            document.getElementById('userRole').textContent = (user.role || 'STUDENT').toUpperCase();
+        }
+
+        // Restore last active section or default to events
+        const lastSection = localStorage.getItem('activeStudentSection') || 'events';
+        showSection(lastSection);
+
+        function toggleBrief(id) {
+            const brief = document.getElementById(`brief-${id}`);
+            const card = document.getElementById(`card-${id}`);
+            
+            if(brief.classList.contains('hidden')) {
+                // Expand
+                brief.classList.remove('hidden');
+                card.classList.remove('col-span-1');
+                card.classList.add('col-span-full'); // Remove fixed height, allow natural expansion
+            } else {
+                // Collapse
+                brief.classList.add('hidden');
+                card.classList.remove('col-span-full');
+                card.classList.add('col-span-1');
+            }
+        }
+
+        function getDriveDirectLink(url) {
+            if(!url) return 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800';
+            const fileIdMatch = url.match(/\/file\/d\/([^\/]+)/) || url.match(/\?id=([^\&]+)/);
+            if (fileIdMatch && fileIdMatch[1]) {
+                return `https://lh3.googleusercontent.com/u/0/d/${fileIdMatch[1]}`;
+            }
+            return url;
+        }
+
+        let allEventsData = [];
+
+        async function loadEvents() {
+            const grid = document.getElementById('eventsGrid');
+            const noEvents = document.getElementById('noEvents');
+            
+            try {
+                const response = await AuthGuard.secureFetch('/api/events/approved', {
+                    headers: {  }
+                });
+                const events = await response.json();
+                allEventsData = events; // Store globally for filtering
+                renderEvents(events);
+            } catch(e) { console.error(e); }
+        }
+
+        function filterEvents(type) {
+            // Update UI Active State
+            const pills = document.querySelectorAll('.filter-pill');
+            pills.forEach(p => {
+                p.classList.remove('active');
+                if(p.innerText.toLowerCase().includes(type) || (type === 'all' && p.innerText.toLowerCase().includes('all'))) {
+                    p.classList.add('active');
+                }
+            });
+
+            if(type === 'all') {
+                renderEvents(allEventsData);
+            } else {
+                const filtered = allEventsData.filter(e => 
+                    e.title.toLowerCase().includes(type.toLowerCase())
+                );
+                renderEvents(filtered);
+            }
+        }
+
+        function renderEvents(events) {
+            const grid = document.getElementById('eventsGrid');
+            const noEvents = document.getElementById('noEvents');
+            
+            try {
+                if (!events || events.length === 0) {
+                    grid.innerHTML = '';
+                    noEvents.classList.remove('hidden');
+                    return;
+                }
+
+                noEvents.classList.add('hidden');
+                grid.innerHTML = events.map(e => `
+                    <div id="card-${e.id}" class="group relative overflow-hidden rounded-[2rem] bg-white border border-slate-200 shadow-sm transition-all duration-500 hover:shadow-2xl grid grid-cols-1 md:grid-cols-2 min-h-[330px] w-full col-span-1">
+                        <!-- Visual Part (Left) - Glass Sheen Effect Isolated Here -->
+                        <div class="glass-sheen relative bg-slate-100 overflow-hidden border-r border-slate-100 h-full">
+                             <img src="${getDriveDirectLink(e.poster_url)}" 
+                                 class="h-full w-full object-cover" 
+                                 alt="${e.title}">
+                             <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                             
+                             <!-- Deadline Badge -->
+                             <div class="absolute top-4 left-4">
+                                <div class="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 shadow-xl">
+                                    <p class="text-[7px] font-black uppercase text-white tracking-widest mb-0.5 opacity-70">Application Deadline</p>
+                                    <p class="text-[11px] font-black text-white">${new Date(e.reg_deadline).toLocaleDateString([], {day:'2-digit', month:'short'})}</p>
+                                </div>
+                             </div>
+                        </div>
+
+                        <!-- Content Part (Right) -->
+                        <div class="p-6 flex flex-col justify-between bg-white bg-gradient-to-br from-white to-slate-50/50">
+                            <div class="space-y-6">
+                                <div class="space-y-1.5">
+                                    <h3 class="text-2xl font-black text-slate-900 leading-tight tracking-tighter">${e.title}</h3>
+                                    <div class="flex items-center gap-2 text-primary font-black uppercase text-[10px] tracking-widest opacity-80">
+                                        <i data-lucide="map-pin" class="h-3.5 w-3.5"></i> ${e.hall_name}
+                                    </div>
+                                </div>
+
+                                <div class="space-y-4">
+                                    <!-- Timings & Policy Section - Consolidated -->
+                                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Event Constraints</p>
+                                            <div class="flex items-center gap-1.5">
+                                                <i data-lucide="clock" class="w-3 h-3 text-blue-500"></i>
+                                                <span class="text-[9px] font-bold text-slate-500 italic">
+                                                    ${(() => {
+                                                        const start = new Date(e.start_date);
+                                                        const end = new Date(e.end_date);
+                                                        const diffMs = end - start;
+                                                        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+                                                        const diffDays = Math.floor(diffHrs / 24);
+                                                        const remainingHrs = diffHrs % 24;
+                                                        if (diffDays > 0) return `${diffDays} Day${diffDays > 1 ? 's' : ''} ${remainingHrs > 0 ? remainingHrs + 'h' : ''}`;
+                                                        return diffHrs + ' Hours';
+                                                    })()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <p class="text-[11px] font-bold text-slate-700 flex items-center flex-wrap gap-2">
+                                                <span>${new Date(e.start_date).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</span>
+                                                <i data-lucide="arrow-right" class="w-3 h-3 text-blue-400 opacity-50"></i>
+                                                <span>${new Date(e.end_date).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</span>
+                                            </p>
+                                            <div class="flex items-center gap-2 pt-1 border-t border-slate-200/50">
+                                                <p class="text-[7px] font-black text-slate-400 uppercase tracking-widest">Access:</p>
+                                                <p class="text-[9px] font-black text-emerald-600 italic uppercase tracking-tighter">${e.female_mandatory ? '🚨 1 Female Participant Mandatory' : '✅ General'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Description Brief -->
+                                    <div class="space-y-3">
+                                        <button onclick="toggleBrief(${e.id})" class="flex items-center gap-2 text-[9px] font-black text-primary/60 uppercase tracking-widest hover:text-primary transition-all">
+                                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Read Pitch Brief <i data-lucide="chevron-down" class="w-2.5 h-2.5"></i>
+                                        </button>
+                                        <div id="brief-${e.id}" class="hidden animate-in space-y-4">
+                                             <div class="bg-indigo-50/20 p-4 rounded-2xl border border-indigo-100/30">
+                                                <p class="text-[7px] font-black text-primary/40 uppercase tracking-widest mb-1">Mission Pitch</p>
+                                                <p class="text-xs text-slate-500 leading-relaxed italic whitespace-pre-wrap">"${e.description || 'Logistics pending...'}"</p>
+                                             </div>
+
+                                             ${e.event_flow && e.event_flow.length > 0 ? `
+                                             <div class="space-y-4">
+                                                 <div class="space-y-2">
+                                                     <p class="text-[7px] font-black text-slate-400 uppercase tracking-widest px-1">Event Flow / Rounds</p>
+                                                     <div class="space-y-1.5">
+                                                         ${e.event_flow.map((s, idx) => `
+                                                            <div class="flex items-center gap-2 text-[10px] font-semibold text-slate-600 p-2 bg-slate-50 border border-slate-100 rounded-lg">
+                                                                <span class="w-4 h-4 flex items-center justify-center bg-white border border-slate-200 rounded-md text-[8px] font-black text-primary">${idx+1}</span>
+                                                                ${s}
+                                                            </div>
+                                                         `).join('')}
+                                                     </div>
+                                                 </div>
+                                                 
+                                                 <div class="space-y-2">
+                                                     <p class="text-[7px] font-black text-slate-400 uppercase tracking-widest px-1">Logistics & Amenities</p>
+                                                     <div class="flex flex-wrap gap-1.5 mb-2">
+                                                         ${(e.refreshments?.items || []).map(r => `
+                                                            <span class="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md text-[8px] font-black border border-emerald-100">${r}</span>
+                                                         `).join('')}
+                                                     </div>
+                                                     <p class="text-[8px] text-slate-400 italic pl-1">"${e.refreshments?.notes || 'No extra logistics specified.'}"</p>
+                                                 </div>
+                                             </div>
+                                             ` : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="pt-6 border-t border-slate-50 flex items-center justify-end">
+                                <button onclick="openModal('${e.title}')" class="px-10 py-4 bg-primary text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/10">
+                                    REGISTER NOW
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                lucide.createIcons();
+            } catch(e) { console.error(e); }
+        }
+
+        loadEvents();
+
+        function openModal(title) {
+            document.getElementById('regModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('regModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
