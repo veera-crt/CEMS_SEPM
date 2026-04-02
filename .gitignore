@@ -1,4 +1,5 @@
-venv/
+# Virtual environment (User requested to include)
+# venv/
 __pycache__/
 *.pyc
 .DS_Store
