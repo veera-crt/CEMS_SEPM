@@ -28,8 +28,17 @@ cd <folder-name>
 ```
 
 ### 3. Setup Virtual Environment
+> [!IMPORTANT]
+> The `venv/` folder in this repo is pre-configured for **macOS**. 
+> - **Mac Users:** You can use the existing `venv/` directly.
+> - **Windows/Linux Users:** Do NOT use the included `venv/`. Delete it and create your own.
+
+**To create your own (Required for Windows/Linux):**
 ```bash
-# Create the environment
+# Delete existing if any
+rm -rf venv
+
+# Create new environment
 python3 -m venv venv
 
 # Activate it (macOS/Linux)
