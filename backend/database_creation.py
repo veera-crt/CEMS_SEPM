@@ -124,69 +124,89 @@ def create_tables():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(email, role)
         );
+        """,
+        """
+        -- Trigger: Automatically set club_id on event creation based on organizer_id
+        CREATE OR REPLACE FUNCTION set_event_club_id()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            IF NEW.club_id IS NULL THEN
+                SELECT club_id INTO NEW.club_id FROM users WHERE id = NEW.organizer_id;
+            END IF;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+
+        DROP TRIGGER IF EXISTS trg_set_event_club_id ON events;
+        CREATE TRIGGER trg_set_event_club_id
+        BEFORE INSERT ON events
+        FOR EACH ROW
+        EXECUTE FUNCTION set_event_club_id();
         """
     ]
 
     try:
         logger.info("Initializing database creation...")
         for query in queries:
-            # execute_query relies on the context manager, which automatically commits
             execute_query(query, fetch=False)
-            logger.info("Executed table creation query successfully.")
+            logger.info("Executed query successfully.")
             
-        logger.info("Populating clubs data...")
-        clubs_data = [
-            # Technical & Research Teams
-            ('Technical & Research Teams', 'SRMKZILLA'),
-            ('Technical & Research Teams', 'Google Developer Student Club (GDSC)'),
-            ('Technical & Research Teams', 'Next Tech Lab'),
-            ('Technical & Research Teams', 'Data Science Community SRM'),
-            ('Technical & Research Teams', 'IoT Alliance Club'),
-            ('Technical & Research Teams', 'SRM Rudra'),
-            ('Technical & Research Teams', 'Camber Racing'),
-            ('Technical & Research Teams', '4ZE Racing'),
-            ('Technical & Research Teams', 'SRM UAV'),
-            ('Technical & Research Teams', 'Quantum Computing Club'),
-            ('Technical & Research Teams', 'Infi-alpha-Hyperloop'),
-            # Cultural & Creative Clubs
-            ('Cultural & Creative Clubs', 'Dance Club'),
-            ('Cultural & Creative Clubs', 'Music Club'),
-            ('Cultural & Creative Clubs', 'Literary Club'),
-            ('Cultural & Creative Clubs', 'Movies and Dramatics Club'),
-            ('Cultural & Creative Clubs', 'Photography Club'),
-            ('Cultural & Creative Clubs', 'Fashion Club'),
-            ('Cultural & Creative Clubs', 'Astrophilia'),
-            ('Cultural & Creative Clubs', 'Fine Arts Club'),
-            # Professional Chapters & Societies
-            ('Professional Chapters & Societies', 'ACM'),
-            ('Professional Chapters & Societies', 'IEEE'),
-            ('Professional Chapters & Societies', 'CSI'),
-            ('Professional Chapters & Societies', 'IEI'),
-            ('Professional Chapters & Societies', 'SAE'),
-            ('Professional Chapters & Societies', 'IET'),
-            # Social & Special Interest Clubs
-            ('Social & Special Interest Clubs', 'Rotaract Club of SRM KTR'),
-            ('Social & Special Interest Clubs', 'E-Cell (Entrepreneurship Cell)'),
-            ('Social & Special Interest Clubs', 'The Listening Space'),
-            ('Social & Special Interest Clubs', 'SRM MUN'),
-            ('Social & Special Interest Clubs', 'NSS (National Service Scheme)'),
-            # Department-Specific Clubs
-            ('Department-Specific Clubs', 'Pie Club'),
-            ('Department-Specific Clubs', 'Tekmedica'),
-            ('Department-Specific Clubs', 'BIS Standards Club'),
-            ('Department-Specific Clubs', 'Finance & Media Clubs'),
-            # Major Fest Committees
-            ('Major Fest Committees', 'Aaruush'),
-            ('Major Fest Committees', 'Milan')
-        ]
-        
         from db import DatabaseConnection
         with DatabaseConnection() as conn:
             with conn.cursor() as cur:
+                # 1. Populate Clubs
+                clubs_data = [
+                    ('Technical & Research Teams', 'SRMKZILLA'),
+                    ('Technical & Research Teams', 'Google Developer Student Club (GDSC)'),
+                    ('Technical & Research Teams', 'Next Tech Lab'),
+                    ('Technical & Research Teams', 'Data Science Community SRM'),
+                    ('Technical & Research Teams', 'IoT Alliance Club'),
+                    ('Technical & Research Teams', 'SRM Rudra'),
+                    ('Technical & Research Teams', 'Camber Racing'),
+                    ('Technical & Research Teams', '4ZE Racing'),
+                    ('Technical & Research Teams', 'SRM UAV'),
+                    ('Technical & Research Teams', 'Quantum Computing Club'),
+                    ('Technical & Research Teams', 'Infi-alpha-Hyperloop'),
+                    ('Cultural & Creative Clubs', 'Dance Club'),
+                    ('Cultural & Creative Clubs', 'Music Club'),
+                    ('Cultural & Creative Clubs', 'Literary Club'),
+                    ('Cultural & Creative Clubs', 'Movies and Dramatics Club'),
+                    ('Cultural & Creative Clubs', 'Photography Club'),
+                    ('Cultural & Creative Clubs', 'Fashion Club'),
+                    ('Cultural & Creative Clubs', 'Astrophilia'),
+                    ('Cultural & Creative Clubs', 'Fine Arts Club'),
+                    ('Professional Chapters & Societies', 'ACM'),
+                    ('Professional Chapters & Societies', 'IEEE'),
+                    ('Professional Chapters & Societies', 'CSI'),
+                    ('Professional Chapters & Societies', 'IEI'),
+                    ('Professional Chapters & Societies', 'SAE'),
+                    ('Professional Chapters & Societies', 'IET'),
+                    ('Social & Special Interest Clubs', 'Rotaract Club of SRM KTR'),
+                    ('Social & Special Interest Clubs', 'E-Cell (Entrepreneurship Cell)'),
+                    ('Social & Special Interest Clubs', 'The Listening Space'),
+                    ('Social & Special Interest Clubs', 'SRM MUN'),
+                    ('Social & Special Interest Clubs', 'NSS (National Service Scheme)'),
+                    ('Department-Specific Clubs', 'Pie Club'),
+                    ('Department-Specific Clubs', 'Tekmedica'),
+                    ('Department-Specific Clubs', 'BIS Standards Club'),
+                    ('Department-Specific Clubs', 'Finance & Media Clubs'),
+                    ('Major Fest Committees', 'Aaruush'),
+                    ('Major Fest Committees', 'Milan')
+                ]
                 cur.executemany("INSERT INTO clubs (category, name) VALUES (%s, %s) ON CONFLICT DO NOTHING;", clubs_data)
-        logger.info(f"✅ Pre-loaded {len(clubs_data)} clubs into the database successfully!")
-        
-        logger.info("✅ All database tables have been created successfully!")
+                
+                # 2. Populate Halls
+                halls_data = [
+                    ("SRM TP 404 & 405", 120, "Combined large classroom in TP building"),
+                    ("SRM GANESAN AUDITORIUM", 500, "Large auditorium for main events"),
+                    ("MEDICAL HALL", 200, "Hall near the medical block"),
+                    ("BELL LAB 502", 40, "Laboratory/Seminar Room")
+                ]
+                cur.executemany("INSERT INTO halls (name, capacity, description) VALUES (%s, %s, %s) ON CONFLICT (name) DO NOTHING;", halls_data)
+                
+                conn.commit()
+                
+        logger.info("✅ Database fully initialized with automation triggers and seed data!")
     except Exception as e:
         logger.error(f"❌ Failed to create tables: {e}")
 
