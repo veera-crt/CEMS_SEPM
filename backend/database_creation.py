@@ -11,12 +11,24 @@ def create_tables():
         DROP TABLE IF EXISTS events CASCADE;
         DROP TABLE IF EXISTS users CASCADE;
         DROP TABLE IF EXISTS clubs CASCADE;
+        DROP TABLE IF EXISTS halls CASCADE;
+        DROP TABLE IF EXISTS refresh_tokens CASCADE;
+        DROP TABLE IF EXISTS revoked_tokens CASCADE;
+        DROP TABLE IF EXISTS otp_verifications CASCADE;
         """,
         """
         CREATE TABLE IF NOT EXISTS clubs (
             id SERIAL PRIMARY KEY,
             category VARCHAR(100) NOT NULL,
             name VARCHAR(255) UNIQUE NOT NULL
+        );
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS halls (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) UNIQUE NOT NULL,
+            capacity INTEGER NOT NULL,
+            description TEXT
         );
         """,
         """
@@ -54,6 +66,9 @@ def create_tables():
             is_paid BOOLEAN DEFAULT FALSE,
             price DECIMAL(10, 2) DEFAULT 0.00,
             attendance_code VARCHAR(10),
+            event_flow JSONB,
+            refreshments JSONB,
+            hall_id INTEGER REFERENCES halls(id) ON DELETE SET NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """,
@@ -75,6 +90,24 @@ def create_tables():
             student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
             marked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(event_id, student_id)
+        );
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS refresh_tokens (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            token_hash VARCHAR(255) UNIQUE NOT NULL,
+            device_id VARCHAR(255),
+            ip_address VARCHAR(45),
+            user_agent TEXT,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS revoked_tokens (
+            jti VARCHAR(255) PRIMARY KEY,
+            expires_at TIMESTAMP NOT NULL
         );
         """,
         """
